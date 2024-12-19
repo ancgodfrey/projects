@@ -169,7 +169,7 @@ def loadDataFiles(basePath):
         bigDataArray.append(fileValues)
         
     # # convert to dataframe, return
-    df = pd.DataFrame(bigDataArray,columns = ["conc", "wavelength", "trial", "inputRate", "floor", "FWHM", "timeMax", "binCents", "rawHist", "PDF", "integTime", "dateTime"])
+    df = pd.DataFrame(bigDataArray,columns = ["conc", "wavelength", "trial", "inputRate", "floor", "FWHM", "timeMax", "binCents", "rawHist", "PDF", "noiseFactor", "integTime", "dateTime"])
     return df
 
 
@@ -264,6 +264,17 @@ def rayleighCoef(concc,wvlngth):
     return coef
 
 
+'''
+calculate how noisy the data is based on the difference between the peak height 
+and data 100 spaces away
+'''
+def noiseCalculator(maxLoc, histogram):   
+    if histogram[maxLoc-100][0] > 0:
+        ratio = histogram[maxLoc][0]/histogram[maxLoc-100][0]
+    else:
+        ratio = 1e9
+    return 1/ratio
+       
 
 
 '''
@@ -342,34 +353,26 @@ def processData(file):
     # find data "floor" - pick value way out before peak
     floor = rawHistogram[np.where(time==1)][0]
     
+
+    
     # find FWHM
     halfMaxLo = np.min(np.where(rawHistogram >= np.max(rawHistogram)/2))
     halfMaxHi = np.max(np.where(rawHistogram >= np.max(rawHistogram)/2))
     FWHM = binCenters[halfMaxHi]-binCenters[halfMaxLo]
 
     # find time of peak 
-    timeMax = binCenters[np.where(rawHistogram == np.max(rawHistogram))][0]
+    maxLocation = np.where(rawHistogram == np.max(rawHistogram))[0]
+    timeMax = binCenters[maxLocation][0]
+    
     
     # convert to PDF
     PDF = countsToPDF(rawHistogram,binSize)
-    # PDFmax = np.max(PDF)
-    # PDFfloor = np.min(PDF)
+    
+    # get noise parameters    
+    noise = noiseCalculator(maxLocation, PDF)
     
     # return a butt-ton of things
-    return [concentration, wavelength, trial, inputCountRate, floor, FWHM, timeMax, binCenters, rawHistogram, PDF, integrationTime, collectTime]
-
-
-'''
-calculate how noisy the data is based on the difference between the peak height 
-and data 100 spaces away
-'''
-def noiseCalculator(data):    
-    difference = []
-    for x in data.index:
-       timeMaxInd = np.where(data.binCents[x]==data.timeMax[x])[0][0]
-       difference.append(data.PDF[x][timeMaxInd]/data.PDF[x][timeMaxInd-200])
-    return 1/np.array(difference)
-       
+    return [concentration, wavelength, trial, inputCountRate, floor, FWHM, timeMax, binCenters, rawHistogram, PDF, noise, integrationTime, collectTime]
 
 
 '''
@@ -719,7 +722,7 @@ def plotPredictionsAndData(predictionsDiff, predictionsTel, adjustedData):
     
     ax.plot(predictionsDiff.concc, 1000*predictionsDiff.IoR_dif, c = 'darkturquoise')
     
-    wavelengths, EFPTs, errors, nvals, concs = adjustPeaksWavelength(data)
+    wavelengths, EFPTs, errors, nvals, concs = adjustPeaksWavelength(adjustedData)
     colors = cm.plasma(np.linspace(0.2,0.75, len(wavelengths)))
     
     a = 0.62
@@ -755,7 +758,7 @@ def plotPredictionsAndDataTwoFigs(predictionsDiff, predictionsTel, predictionsTe
     vmin, vmax = 0.2, 0.75
     cmap = truncate_colormap(cmap_base, vmin, vmax)
 
-    wavelengths, EFPTs, nvals, concs = linFit(data)
+    wavelengths, EFPTs, nvals, concs = linFit(adjustedData)
     colors = cm.plasma(np.linspace(0.2,0.75, len(wavelengths)))
 
     fig, ax = plt.subplots(2, figsize=(5,3))
@@ -814,7 +817,7 @@ def plotPredictionsLowNHighNTwoFigs(predictionsDiff, predictionsTel, predictions
     vmin, vmax = 0.2, 0.75
     cmap = truncate_colormap(cmap_base, vmin, vmax)
 
-    wavelengths, EFPTs, nvals, concs = linFit(data)
+    wavelengths, EFPTs, nvals, concs = linFit(adjustedData)
     colors = cm.plasma(np.linspace(0.2,0.75, len(wavelengths)))
 
     fig, ax = plt.subplots(2, figsize=(5,3))
@@ -879,50 +882,31 @@ def plotPredictionsLowNHighNTwoFigs(predictionsDiff, predictionsTel, predictions
 
 if __name__ == "__main__":
     
+    # read in data files from hydraharp folder, dump info into dataframe
     basePath = "C:/Users/ancgo/Documents/hydraharp/all-data/"
-    
     PHUtoTXT("C:/Users/ancgo/Documents/hydraharp/PHU-files-new/**/*.phu")
-
-    # # read in data files
-    # for file in glob.glob("C:/Users/ancgo/Documents/hydraharp/PHU-files-new/**/*.phu"):
-    #     # gather info recorded in filename - concentration, wavelength, and trial number
-    #     trialInfo = file[-14:-4]
-    #     # check to make sure it makes sense
-    #     print(trialInfo)
-    #     # generate new filename for processed data file
-    #     newFileName = os.path.join(basePath,trialInfo+".txt")
-    #     # read datafile and gather essential information from ASCII header
-    #     readPHU(file,newFileName)
-    
     df = loadDataFiles(basePath)
-    
-    # # process those data files to get one big ol array of everything
-    # bigDataArray = []
-    # for filePath in glob.glob(basePath + "/*.txt"):
-    #     fileValues = processData(filePath)
-    #     bigDataArray.append(fileValues)
         
-    # # # convert to dataframe
-    # df = pd.DataFrame(bigDataArray,columns = ["conc", "wavelength", "trial", "inputRate", "floor", "FWHM", "timeMax", "binCents", "rawHist", "PDF", "integTime", "dateTime"])
-    
-    # # add in "noise factor" comparing peak of histogram to value 50 steps left of it
-    df.insert(11,'noiseFactor',noiseCalculator(df))
-    
     # make dataframes for water, air, and ludox data
     df_noAir = df[df["conc"]>-1]
+    # preset intervals for where the max is (reasonably) in datafiles - change as needed
     df_noAir = df_noAir[df_noAir['timeMax']>5.1]
     df_noAir = df_noAir[df_noAir['timeMax']<6.0]
-    df_noAir = df_noAir[(df_noAir['inputRate'] > 2e4) & (df_noAir['noiseFactor'] < 3e-4)]
+    # remove anything that is particularly noisy
+    df_noAir = df_noAir[(df_noAir['inputRate'] > 2e4) & (df_noAir['noiseFactor'] < 1e-3)]
     
+    # write new data to pickle file
+    # get current date and time
+    now = datetime.now()    
+    # generate filename
+    dataPickleName = os.path.join(basePath, now.strftime("%Y-%m-%d-%H-%M")+".pkl")
+    df_noAir.to_pickle(dataPickleName)
+    
+    # adjust peaks to be relative to peaks through water, by wavelength
     adjust = adjustPeaksWavelength(df_noAir)
+    # plot adjusted data
     plotPeaksWavelengthScaled(adjust)
     
-    dfAir = df[df["conc"]<0]
-    dfAir = dfAir[dfAir["timeMax"]<5.0]
-    
-    dfWtr = df_noAir[df_noAir["conc"]==0]
-    dfLdx = df_noAir[df_noAir["conc"]>0]
-
     
     # # load in predictions, add column I should have put into csv file to begin with
     # dfPredictions = pd.read_csv("C:/Users/ancgo/Documents/prediction_values_scaled.csv")
