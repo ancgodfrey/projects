@@ -1,0 +1,704 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 14.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     23740,        696]
+NotebookOptionsPosition[     21243,        643]
+NotebookOutlinePosition[     21654,        659]
+CellTagsIndexPosition[     21611,        656]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Photon telegrapher equation predictions", "Title",ExpressionUUID->"19e049f0-3a96-45f1-bf0b-6f974b408688"],
+
+Cell[CellGroupData[{
+
+Cell["Setup", "Section",ExpressionUUID->"31f3d5e7-71fa-432c-a932-0229b09515cf"],
+
+Cell[CellGroupData[{
+
+Cell["Define variables and constants", "Subsection",ExpressionUUID->"4255907e-4113-42d1-9851-517073c09ac9"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"L", "=", "1.015"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"tube", " ", "length"}], ",", " ", "m"}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"c", " ", "=", " ", "2.9979*^8"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"speed", " ", "of", " ", "light", " ", "in", " ", "vacuum"}], ",",
+     " ", 
+    RowBox[{"m", "/", "s"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"luConc", " ", "=", " ", "0.5"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"ludox", " ", "concentration"}], ",", " ", 
+    RowBox[{"vol", "/", "vol"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"conc", " ", "=", " ", 
+    RowBox[{"0.235", "*", "luConc"}]}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"silica", " ", "concentration"}], ",", " ", 
+    RowBox[{"vol", "/", "vol"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"nSi", " ", "=", " ", "1.45"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+   "index", " ", "of", " ", "refraction", " ", "amorphous", " ", "silica"}], 
+   "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"dSi", " ", "=", " ", "21*^-9"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"diameter", " ", "of", " ", "silica", " ", "beads"}], ",", " ", 
+    "m"}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Rho]Si", " ", "=", " ", "2200"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"density", " ", "of", " ", "amorphous", " ", "silica"}], ",", " ", 
+    RowBox[{"kg", "/", 
+     RowBox[{"m", "^", "3"}]}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Rho]Wtr", " ", "=", " ", "1000"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"density", " ", "of", " ", "water"}], ",", " ", 
+    RowBox[{"kg", "/", 
+     RowBox[{"m", "^", "3"}]}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"molmassSi", " ", "=", " ", "0.0060"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+    "molar", " ", "mass", " ", "of", " ", "amorphous", " ", "silica"}], ",", 
+    " ", 
+    RowBox[{"kg", "/", "mol"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"volSi", " ", "=", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"4", " ", "\[Pi]", " ", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"dSi", "/", "2"}], ")"}], "^", "3"}]}], ")"}], "/", "3"}]}], 
+   ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"volume", " ", "of", " ", "silica", " ", "beads"}], ",", " ", 
+    RowBox[{"m", "^", "3"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"nDensity", "=", 
+    RowBox[{"conc", "/", "volSi"}]}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+    "number", " ", "density", " ", "of", " ", "silica", " ", "beads"}], ",", 
+    " ", 
+    RowBox[{"m", "^", 
+     RowBox[{"-", "3"}]}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Lambda]", " ", "=", " ", "680*^-9"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"wavelength", " ", "of", " ", "light"}], ",", " ", "m"}], 
+   "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"NA", " ", "=", " ", "6.0221408*^23"}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"avogadro", "'"}], "s", " ", "number"}], ",", " ", 
+    RowBox[{"mol", "^", 
+     RowBox[{"-", "1"}]}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"g", "=", "0"}], ";"}], " ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"anisotropy", " ", "factor"}], ",", " ", 
+    RowBox[{"<", 
+     RowBox[{"cos", 
+      RowBox[{"(", "\[Theta]", ")"}]}], ">", " ", 
+     RowBox[{"for", " ", "\[Theta]", " ", "scattering", " ", "angle"}]}], ",",
+     " ", 
+    RowBox[{
+    "0", " ", "for", " ", "isotropic", " ", "rayleigh", " ", "scattering"}]}],
+    "*)"}], "\n", "\n", 
+  RowBox[{"(*", 
+   RowBox[{"SPEED", " ", "OF", " ", "LIGHT", " ", "IN", " ", "MEDIUM"}], 
+   "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"c", "'"}], "=", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"conc", " ", "*", " ", 
+       RowBox[{"c", "/", "nSi"}]}], ")"}], " ", "+", 
+     RowBox[{"(", " ", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"1", "-", "conc"}], ")"}], "*", 
+       RowBox[{"c", "/", "1.33"}]}], ")"}]}]}], ";"}], "             ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"index", "-", 
+     RowBox[{"averaged", " ", "speed", " ", "of", " ", "light"}]}], ",", " ", 
+    RowBox[{"m", "/", "s"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Tau]", "'"}], "=", 
+   RowBox[{"L", " ", "/", 
+    RowBox[{"c", "'"}]}]}], "             ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+     "time", " ", "for", " ", "photon", " ", "to", " ", "travel", " ", 
+      "through", " ", "index"}], "-", 
+     RowBox[{"averaged", " ", "medium"}]}], ",", "s"}], "*)"}], "\n", "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"SCATTERING", " ", "CROSS", " ", "SECTION"}], " ", "->", " ", 
+    "COEFFICIENT"}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Zeta]", " ", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", " ", 
+       RowBox[{"2", 
+        RowBox[{"(", 
+         RowBox[{"\[Pi]", "^", "5"}], ")"}]}], ")"}], "/", "3"}], " ", "*", 
+     " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"dSi", "^", "6"}], " ", "/", " ", 
+       RowBox[{"\[Lambda]", "^", "4"}]}], ")"}], "*", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"nSi", "^", "2"}], "-", "1"}], ")"}], "/", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"nSi", "^", "2"}], "+", "2"}], ")"}]}], ")"}], "^", 
+      "2"}]}]}], " ", ";"}], "               ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"rayleigh", " ", "scattering", " ", "cross", " ", "sec"}], ",", 
+    " ", 
+    RowBox[{"m", "^", "2"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Sigma]s", " ", "=", " ", 
+    RowBox[{"\[Zeta]", "*", "nDensity"}]}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"scattering", " ", "coefficient"}], ",", " ", 
+    RowBox[{"m", "^", 
+     RowBox[{"-", "1"}]}]}], "*)"}], "\n", "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"ABSORPTION", " ", "CROSS", " ", "SECTION"}], " ", "->", " ", 
+    "COEFFICIENT"}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Epsilon]", " ", "=", " ", "0.04"}], " ", ";"}], 
+  "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+    "attenuation", " ", "coefficient", " ", "for", " ", "ludox", " ", "from", 
+     " ", "linear", " ", "fit"}], ",", " ", 
+    RowBox[{"m", "^", 
+     RowBox[{"-", "1"}]}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Alpha]", " ", "=", 
+    RowBox[{"\[Epsilon]", "*", 
+     RowBox[{"Log", "[", "10", "]"}], "*", 
+     RowBox[{
+      RowBox[{"10", "^", "3"}], "/", "NA"}]}]}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"absorption", " ", "cross", " ", "section"}], ",", " ", 
+    RowBox[{"m", "^", "2"}]}], "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Sigma]a", " ", "=", " ", 
+    RowBox[{"\[Alpha]", "*", "nDensity"}]}], ";"}], "              ", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"absorption", " ", "coefficient"}], ",", " ", 
+    RowBox[{"m", "^", 
+     RowBox[{"-", "1"}]}]}], "*)"}], "\n", "\n", 
+  RowBox[{"(*", 
+   RowBox[{"SANITY", " ", 
+    RowBox[{"CHECK", ":", " ", 
+     RowBox[{
+     "PRINT", " ", "VALUES", " ", "FOR", " ", "SCATTERING", " ", "AND", " ", 
+      "ABSORPTION", " ", "LENGTHS", " ", 
+      RowBox[{"(", "m", ")"}]}]}]}], "*)"}]}], "\n", 
+ RowBox[{"Print", "[", "\n", 
+  RowBox[{
+  "\"\<Volume concentration of SiO2: \>\"", ",", "conc", ",", 
+   "\"\< | Wavelength: \>\"", ",", 
+   RowBox[{"\[Lambda]", "*", 
+    RowBox[{"10", "^", "9"}]}], ",", " ", "\"\< nm\>\""}], "]"}], "\n", 
+ RowBox[{"Print", "[", "\n", 
+  RowBox[{"\"\<Scattering Path Length: \>\"", ",", 
+   RowBox[{"1", "/", "\[Sigma]s"}], ",", "\"\< m\>\""}], "]"}], "\n", 
+ RowBox[{"Print", "[", "\n", 
+  RowBox[{"\"\<Absorption Path Length: \>\"", ",", 
+   RowBox[{"1", "/", "\[Sigma]a"}], ",", "\"\< m\>\""}], "]"}]}], "Input",Expr\
+essionUUID->"e3c32db4-174c-41da-a170-85f819a05611"],
+
+Cell[BoxData["4.547203052815523`*^-9"], "Output",
+ CellLabel->
+  "Out[21]= ",ExpressionUUID->"43c62d8e-af08-4192-9e08-965412fc36e7"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Volume concentration of SiO2: \"\>", "\[InvisibleSpace]", 
+   "0.1175`", "\[InvisibleSpace]", "\<\" | Wavelength: \"\>", 
+   "\[InvisibleSpace]", "680", "\[InvisibleSpace]", "\<\" nm\"\>"}],
+  SequenceForm[
+  "Volume concentration of SiO2: ", 0.1175, " | Wavelength: ", 680, " nm"],
+  Editable->False]], "Print",ExpressionUUID->"2bcce3ec-06f2-4607-abbf-\
+d0c9f0521b75"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Scattering Path Length: \"\>", "\[InvisibleSpace]", 
+   "0.006982652044725599`", "\[InvisibleSpace]", "\<\" m\"\>"}],
+  SequenceForm["Scattering Path Length: ", 0.006982652044725599, " m"],
+  Editable->False]], "Print",ExpressionUUID->"c78eabdb-85ef-49e3-8037-\
+3d82016a627d"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Absorption Path Length: \"\>", "\[InvisibleSpace]", 
+   "0.2698322564594664`", "\[InvisibleSpace]", "\<\" m\"\>"}],
+  SequenceForm["Absorption Path Length: ", 0.2698322564594664, " m"],
+  Editable->False]], "Print",ExpressionUUID->"b7892859-0174-49e2-b995-\
+825e33340204"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Telegrapher model", "Section",ExpressionUUID->"22e336c9-7d9f-4e29-8908-203ead7c0892"],
+
+Cell[CellGroupData[{
+
+Cell["Define PDE", "Subsection",ExpressionUUID->"dacd3fe7-40e0-4cc3-ae4b-30db322f8d7f"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"u", " ", "=", " ", 
+   RowBox[{"Sqrt", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{
+       RowBox[{"c", "'"}], "^", "2"}], " ", 
+      RowBox[{"t", "^", "2"}]}], " ", "-", " ", 
+     RowBox[{"r", "^", "2"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"\[Gamma]", " ", "=", " ", 
+   RowBox[{
+    RowBox[{"3", "/", "2"}], " ", "*", " ", 
+    RowBox[{"c", "'"}], " ", "*", " ", "\[Sigma]s", 
+    RowBox[{"(", 
+     RowBox[{"1", "-", "g"}], ")"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"\[Phi]", "[", 
+   RowBox[{"r", ",", "t"}], "]"}], ":=", 
+  RowBox[{
+   RowBox[{"1", "/", "2"}], "*", " ", 
+   RowBox[{"(", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"\[Sigma]a", " ", 
+          RowBox[{"c", "'"}]}], " ", "+", " ", "\[Gamma]"}], ")"}]}], "t"}], 
+     "]"}], ")"}], "*", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"DiracDelta", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"c", "'"}], " ", "t"}], " ", "-", " ", "r"}], "]"}], " ", "+",
+      " ", 
+     RowBox[{"DiracDelta", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"c", "'"}], " ", "t"}], " ", "+", " ", "r"}], "]"}], "+", 
+     RowBox[{
+      RowBox[{"HeavisideTheta", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"c", "'"}], " ", "t"}], " ", "-", " ", 
+        RowBox[{"Abs", "[", "r", "]"}]}], "]"}], "*", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"\[Gamma]", "/", 
+          RowBox[{"c", "'"}]}], " ", "*", " ", 
+         RowBox[{"BesselI", "[", 
+          RowBox[{
+           RowBox[{"\[Gamma]", " ", 
+            RowBox[{"u", " ", "/", " ", 
+             RowBox[{"c", "'"}]}]}], ",", "0"}], "]"}]}], " ", "+", " ", 
+        RowBox[{"\[Gamma]", " ", 
+         RowBox[{"t", "/", "u"}], " ", "*", " ", 
+         RowBox[{"BesselI", "[", 
+          RowBox[{
+           RowBox[{"\[Gamma]", " ", 
+            RowBox[{"u", " ", "/", " ", 
+             RowBox[{"c", "'"}]}]}], ",", "1"}], "]"}]}]}], ")"}]}]}], ")"}], 
+   " "}]}]}], "Input",
+ CellLabel->
+  "In[31]:= ",ExpressionUUID->"2c1892f2-dddb-4699-9337-06d85d494fc2"],
+
+Cell[BoxData[
+ RowBox[{"NSolve", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Phi]", "[", 
+     RowBox[{"L", ",", "t"}], "]"}], "==", 
+    RowBox[{"10", "^", 
+     RowBox[{"-", "12"}]}]}], ",", "t"}], "]"}]], "Input",
+ CellLabel->
+  "In[34]:= ",ExpressionUUID->"69d4cd03-fe6f-4c2e-b17c-3c669b03f884"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NSolve", "ifun", 
+   "\"Inverse functions are being used by \\!\\(\\*TagBox[\\\"NSolve\\\", \
+Short[#1, 5] & ]\\), so some solutions may not be found; use Reduce for \
+complete solution information.\"", 2, 34, 3, 24882644972036743239, "Local"},
+  "MessageTemplate"]], "MSG", \
+"Message",ExpressionUUID->"38dca9a7-47f3-45f0-8afa-1acfcbe49a29"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{"{", 
+   RowBox[{"t", "\[Rule]", 
+    RowBox[{
+     RowBox[{"InverseFunction", "[", 
+      RowBox[{"\[Phi]", ",", "2", ",", "2"}], "]"}], "[", 
+     RowBox[{"1.015`", ",", "1.`14.554800290353489*^-12"}], "]"}]}], "}"}], 
+  "}"}]], "Output",
+ CellLabel->
+  "Out[34]= ",ExpressionUUID->"5f10dc11-cb88-48c3-86c7-400b54b885c1"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Durian and Rudnick 1997", "Subsection",ExpressionUUID->"7d99eae8-be03-4223-bc2e-da5a05f69bbc"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[Phi]0", "*", 
+  RowBox[{"\[Gamma]", "/", 
+   RowBox[{"(", 
+    RowBox[{"4", "\[Pi]", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"t", "^", "2"}], "-", 
+        RowBox[{"r", "^", "2"}]}], ")"}], "^", 
+      RowBox[{"(", 
+       RowBox[{"1", "/", "2"}], ")"}]}]}], ")"}]}], "*", " ", 
+  RowBox[{"(", 
+   RowBox[{"Exp", "[", 
+    RowBox[{
+     RowBox[{"-", 
+      RowBox[{"(", 
+       RowBox[{"\[Sigma]a", " ", " ", "+", " ", "\[Gamma]"}], ")"}]}], "t"}], 
+    "]"}], ")"}], "*", 
+  RowBox[{"(", 
+   RowBox[{
+    RowBox[{"\[Gamma]", "*", " ", 
+     RowBox[{"BesselI", "[", 
+      RowBox[{
+       RowBox[{"\[Gamma]", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"t", "^", "2"}], "-", 
+            RowBox[{"r", "^", "2"}]}], ")"}], "^", 
+          RowBox[{"(", 
+           RowBox[{"1", "/", "2"}], ")"}]}], ")"}]}], " ", ",", "1"}], 
+      "]"}]}], " ", "+", " ", 
+    RowBox[{"\[Gamma]", " ", 
+     RowBox[{"t", "/", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"t", "^", "2"}], "-", 
+          RowBox[{"r", "^", "2"}]}], ")"}], "^", 
+        RowBox[{"(", 
+         RowBox[{"1", "/", "2"}], ")"}]}], ")"}]}], " ", "*", " ", 
+     RowBox[{"BesselI", "[", 
+      RowBox[{
+       RowBox[{"\[Gamma]", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"t", "^", "2"}], "-", 
+            RowBox[{"r", "^", "2"}]}], ")"}], "^", 
+          RowBox[{"(", 
+           RowBox[{"1", "/", "2"}], ")"}]}], ")"}]}], " ", ",", "2"}], 
+      "]"}]}]}], ")"}]}]], "Input",ExpressionUUID->"e35f98bc-a400-4f5a-a928-\
+581b13279aa2"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   SuperscriptBox["\[ExponentialE]", 
+    RowBox[{"t", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"-", "\[Gamma]"}], "-", "\[Sigma]a"}], ")"}]}]], " ", 
+   "\[Gamma]", " ", "\[Phi]0", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"\[Gamma]", " ", 
+      RowBox[{"BesselI", "[", 
+       RowBox[{
+        RowBox[{
+         SqrtBox[
+          RowBox[{
+           RowBox[{"-", 
+            SuperscriptBox["r", "2"]}], "+", 
+           SuperscriptBox["t", "2"]}]], " ", "\[Gamma]"}], ",", "1"}], 
+       "]"}]}], "+", 
+     FractionBox[
+      RowBox[{"t", " ", "\[Gamma]", " ", 
+       RowBox[{"BesselI", "[", 
+        RowBox[{
+         RowBox[{
+          SqrtBox[
+           RowBox[{
+            RowBox[{"-", 
+             SuperscriptBox["r", "2"]}], "+", 
+            SuperscriptBox["t", "2"]}]], " ", "\[Gamma]"}], ",", "2"}], 
+        "]"}]}], 
+      SqrtBox[
+       RowBox[{
+        RowBox[{"-", 
+         SuperscriptBox["r", "2"]}], "+", 
+        SuperscriptBox["t", "2"]}]]]}], ")"}]}], 
+  RowBox[{"4", " ", "\[Pi]", " ", 
+   SqrtBox[
+    RowBox[{
+     RowBox[{"-", 
+      SuperscriptBox["r", "2"]}], "+", 
+     SuperscriptBox["t", "2"]}]]}]]], "Output",
+ CellLabel->"Out[3]= ",ExpressionUUID->"c9b5143e-dde5-413b-b1ea-629813e5a2a0"]
+}, Open  ]],
+
+Cell[BoxData[
+ TemplateBox[{
+  "Part", "pkspec1", 
+   "\"The expression \
+\\!\\(\\*TagBox[RowBox[{\\\"Predictions`PredictionOrderingsListIndex\\\", \
+\\\"[\\\", RowBox[{\\\"\\\\\\\"MathExpression\\\\\\\"\\\", \\\",\\\", \
+RowBox[{\\\"{\\\", RowBox[{RowBox[{\\\"{\\\", RowBox[{RowBox[{\\\"{\\\", \
+\\\"}\\\"}], \\\",\\\", \\\"False\\\", \\\",\\\", \\\"True\\\"}], \
+\\\"}\\\"}], \\\",\\\", RowBox[{\\\"{\\\", RowBox[{\\\"False\\\", \\\",\\\", \
+RowBox[{\\\"\[LeftSkeleton]\\\", \\\"22\\\", \\\"\[RightSkeleton]\\\"}], \
+\\\",\\\", \\\"False\\\"}], \\\"}\\\"}], \\\",\\\", RowBox[{\\\"{\\\", \
+RowBox[{\\\"False\\\", \\\",\\\", \\\"False\\\", \\\",\\\", \\\"False\\\", \\\
+\",\\\", \\\"$Failed\\\", \\\",\\\", \\\"False\\\", \\\",\\\", \\\"False\\\", \
+\\\",\\\", RowBox[{\\\"\[LeftSkeleton]\\\", \\\"6\\\", \\\"\[RightSkeleton]\\\
+\"}], \\\",\\\", \\\"False\\\", \\\",\\\", \\\"False\\\", \\\",\\\", \
+\\\"$Failed\\\", \\\",\\\", \\\"False\\\", \\\",\\\", \\\"False\\\"}], \
+\\\"}\\\"}], \\\",\\\", RowBox[{\\\"\[LeftSkeleton]\\\", \\\"1\\\", \\\"\
+\[RightSkeleton]\\\"}], \\\",\\\", RowBox[{\\\"{\\\", RowBox[{\\\"False\\\", \
+\\\",\\\", RowBox[{\\\"HoldComplete\\\", \\\"[\\\", FractionBox[RowBox[{\\\"\
+\[Phi]0\\\", \\\" \\\", \\\"\[Gamma]\\\", \\\" \\\", RowBox[{\\\"Exp\\\", \
+\\\"[\\\", RowBox[{RowBox[{\\\"\[LeftSkeleton]\\\", \\\"2\\\", \\\"\
+\[RightSkeleton]\\\"}], \\\" \\\", \\\"t\\\"}], \\\"]\\\"}], \\\" \\\", \
+RowBox[{\\\"(\\\", RowBox[{RowBox[{\\\"\[Gamma]\\\", \\\" \\\", \
+RowBox[{\\\"BesselI\\\", \\\"[\\\", RowBox[{\\\"\[LeftSkeleton]\\\", \
+\\\"2\\\", \\\"\[RightSkeleton]\\\"}], \\\"]\\\"}]}], \\\"+\\\", RowBox[{\\\"\
+\[Gamma]\\\", \\\" \\\", RowBox[{\\\"\[LeftSkeleton]\\\", \\\"2\\\", \\\"\
+\[RightSkeleton]\\\"}], \\\" \\\", RowBox[{\\\"BesselI\\\", \\\"[\\\", \
+RowBox[{\\\"\[LeftSkeleton]\\\", \\\"2\\\", \\\"\[RightSkeleton]\\\"}], \\\"]\
+\\\"}]}]}], \\\")\\\"}]}], RowBox[{\\\"Times\\\", \\\"[\\\", RowBox[{\\\"\
+\[LeftSkeleton]\\\", \\\"3\\\", \\\"\[RightSkeleton]\\\"}], \\\"]\\\"}]], \
+\\\"]\\\"}], \\\",\\\", \\\"Times\\\", \\\",\\\", \\\"False\\\", \\\",\\\", \
+RowBox[{\\\"Hold\\\", \\\"[\\\", \\\"Times\\\", \\\"]\\\"}]}], \\\"}\\\"}], \
+\\\",\\\", RowBox[{\\\"{\\\", \\\"}\\\"}]}], \\\"}\\\"}]}], \\\"]\\\"}], \
+Short[#1, 5] & ]\\) cannot be used as a part specification.\"", 2, 4, 1, 
+   24882650858602654554, "Local"},
+  "MessageTemplate"]], "MSG", \
+"Message",ExpressionUUID->"f4c8f313-8cf1-4784-991e-243f038fd551"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[Phi]0", "*", 
+  RowBox[{"(", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Gamma]", "^", "3"}], "/", 
+      RowBox[{"(", 
+       RowBox[{"8", "\[Pi]"}], ")"}]}], "*", 
+     RowBox[{"HeavisideTheta", "[", 
+      RowBox[{"t", "-", "r"}], "]"}]}], "+", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"DiracDelta", "[", 
+        RowBox[{"t", "-", "r"}], "]"}], "+", 
+       RowBox[{"D", "[", 
+        RowBox[{
+         RowBox[{"DiracDelta", "[", 
+          RowBox[{"t", "-", "r"}], "]"}], ",", "r"}], "]"}]}], ")"}], "/", 
+     RowBox[{"(", 
+      RowBox[{"4", "\[Pi]", " ", "r"}], ")"}]}]}], ")"}], "*", 
+  RowBox[{"Exp", "[", 
+   RowBox[{"-", 
+    RowBox[{"(", 
+     RowBox[{"\[Sigma]a", " ", " ", "t"}], ")"}]}], "]"}]}]], "Input",Expressi\
+onUUID->"7a3fd686-e571-47ad-ba3d-fdc37bfc8799"],
+
+Cell[BoxData[
+ RowBox[{
+  SuperscriptBox["\[ExponentialE]", 
+   RowBox[{
+    RowBox[{"-", "t"}], " ", "\[Sigma]a"}]], " ", "\[Phi]0", " ", 
+  RowBox[{"(", 
+   RowBox[{
+    FractionBox[
+     RowBox[{
+      SuperscriptBox["\[Gamma]", "3"], " ", 
+      RowBox[{"HeavisideTheta", "[", 
+       RowBox[{
+        RowBox[{"-", "r"}], "+", "t"}], "]"}]}], 
+     RowBox[{"8", " ", "\[Pi]"}]], "+", 
+    FractionBox[
+     RowBox[{
+      RowBox[{"DiracDelta", "[", 
+       RowBox[{
+        RowBox[{"-", "r"}], "+", "t"}], "]"}], "+", 
+      RowBox[{
+       SuperscriptBox["DiracDelta", "\[Prime]",
+        MultilineFunction->None], "[", 
+       RowBox[{"r", "-", "t"}], "]"}]}], 
+     RowBox[{"4", " ", "\[Pi]", " ", "r"}]]}], ")"}]}]], "Output",
+ CellLabel->"Out[5]= ",ExpressionUUID->"6f2f2902-3243-4988-b4fc-e88f4bff556e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{581.25, 648.75},
+WindowMargins->{{Automatic, 45}, {12.75, Automatic}},
+FrontEndVersion->"14.0 for Microsoft Windows (64-bit) (December 12, 2023)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"1da27fc9-4533-4a41-ae62-d8ff1cbd21b8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 111, 0, 160, "Title",ExpressionUUID->"19e049f0-3a96-45f1-bf0b-6f974b408688"],
+Cell[CellGroupData[{
+Cell[716, 26, 79, 0, 67, "Section",ExpressionUUID->"31f3d5e7-71fa-432c-a932-0229b09515cf"],
+Cell[CellGroupData[{
+Cell[820, 30, 107, 0, 54, "Subsection",ExpressionUUID->"4255907e-4113-42d1-9851-517073c09ac9"],
+Cell[CellGroupData[{
+Cell[952, 34, 8211, 253, 923, "Input",ExpressionUUID->"e3c32db4-174c-41da-a170-85f819a05611"],
+Cell[9166, 289, 132, 2, 70, "Output",ExpressionUUID->"43c62d8e-af08-4192-9e08-965412fc36e7"],
+Cell[CellGroupData[{
+Cell[9323, 295, 418, 8, 70, "Print",ExpressionUUID->"2bcce3ec-06f2-4607-abbf-d0c9f0521b75"],
+Cell[9744, 305, 325, 6, 70, "Print",ExpressionUUID->"c78eabdb-85ef-49e3-8037-3d82016a627d"],
+Cell[10072, 313, 321, 6, 70, "Print",ExpressionUUID->"b7892859-0174-49e2-b995-825e33340204"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[10466, 327, 91, 0, 70, "Section",ExpressionUUID->"22e336c9-7d9f-4e29-8908-203ead7c0892"],
+Cell[CellGroupData[{
+Cell[10582, 331, 87, 0, 70, "Subsection",ExpressionUUID->"dacd3fe7-40e0-4cc3-ae4b-30db322f8d7f"],
+Cell[10672, 333, 2145, 67, 70, "Input",ExpressionUUID->"2c1892f2-dddb-4699-9337-06d85d494fc2"],
+Cell[12820, 402, 299, 9, 70, "Input",ExpressionUUID->"69d4cd03-fe6f-4c2e-b17c-3c669b03f884"],
+Cell[13122, 413, 374, 7, 70, "MSG",ExpressionUUID->"38dca9a7-47f3-45f0-8afa-1acfcbe49a29"],
+Cell[13499, 422, 362, 10, 70, "Output",ExpressionUUID->"5f10dc11-cb88-48c3-86c7-400b54b885c1"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[13898, 437, 100, 0, 70, "Subsection",ExpressionUUID->"7d99eae8-be03-4223-bc2e-da5a05f69bbc"],
+Cell[CellGroupData[{
+Cell[14023, 441, 1725, 56, 70, "Input",ExpressionUUID->"e35f98bc-a400-4f5a-a928-581b13279aa2"],
+Cell[15751, 499, 1289, 43, 70, "Output",ExpressionUUID->"c9b5143e-dde5-413b-b1ea-629813e5a2a0"]
+}, Open  ]],
+Cell[17055, 545, 2455, 36, 70, "MSG",ExpressionUUID->"f4c8f313-8cf1-4784-991e-243f038fd551"],
+Cell[CellGroupData[{
+Cell[19535, 585, 840, 26, 70, "Input",ExpressionUUID->"7a3fd686-e571-47ad-ba3d-fdc37bfc8799"],
+Cell[20378, 613, 813, 24, 70, "Output",ExpressionUUID->"6f2f2902-3243-4988-b4fc-e88f4bff556e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
