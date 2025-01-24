@@ -52,76 +52,21 @@ def gumbel(x,A,mu,beta,k):
 def gumbelSum(x,A1,A2,mu1,mu2,b1,b2,k):
     return gumbel(x,A1,mu1,b1,k) + gumbel(x, A2, mu2, b2, 0)
 
-''' 
-fit x,y data to gumbel distribution via scipy.optimize curve_fit function
-    
-prefactor A, peak location mu, scaling factor beta, noise k
-'''
-def gumbelFit(xpoints,ypoints,A,mu,beta,k):
-    # calculate best fits for data
-    try:
-        # be efficient the first time
-        parameters, covariance =  curve_fit(gumbel,xpoints,ypoints,[A,mu,beta,k],bounds=(0.,[np.inf,12.5,12.5,np.inf]), maxfev=5000)
-    except:
-        # we tried to be efficient but it didn't work. take longer now
-        parameters, covariance =  curve_fit(gumbel,xpoints,ypoints,[A,mu,beta,k],bounds=(0.,[np.inf,12.5,12.5,np.inf]), maxfev=20000)
-    
-    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
-    stDevs = np.sqrt(np.diag(covariance))
-    # Calculate the residuals
-    residuals = ypoints - gumbel(xpoints, *parameters)
-    return parameters
-
-
-''' 
-fit x,y data to gumbel sum distribution via scipy.optimize curve_fit function
-    
-prefactor A1 A2, peak location mu1 mu2, scaling factor b1 b2, noise k
-'''
-def gumbelSumFit(xpoints,ypoints,A1,A2,mu1,mu2,b1,b2,k):
-    # calculate best fits for data
-    try:
-        # be efficient the first time
-        parameters, covariance =  curve_fit(gumbelSum,xpoints,ypoints,[A1,A2,mu1,mu2,b1,b2,k],bounds=(0.,[np.inf,np.inf,12.5,12.5,12.5,12.5,np.inf]),maxfev=5000)  
-    except:
-        # we tried to be efficient but it didn't work. take longer now
-        parameters, covariance =  curve_fit(gumbelSum,xpoints,ypoints,[A1,A2,mu1,mu2,b1,b2,k],bounds=(0.,[np.inf,np.inf,12.5,12.5,12.5,12.5,np.inf]),maxfev=20000)
-   
-    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
-    stDevs = np.sqrt(np.diag(covariance))
-    # Calculate the residuals
-    residuals = ypoints - gumbelSum(xpoints, *parameters)
-    return gumbelSum(xpoints, *parameters), parameters
-
-
-''' scattering coefficient for Rayleigh; particle size << light wavelength. IN WATER '''
-def rayleighCoef(concentration,wavelength):
-    Vtube = 1 # unit volume, m^3
-    d = 22e-9 # diameter of ludox silica spheres, m
-    n = 1.47012 # IOR for silica
-    Vsphere = (4./3.) * np.pi * (d/2)**3 # volume of silica sphere m^3
-    nSi = (concentration * Vtube) / Vsphere # number density of silica spheres
-    vNumSi = nSi/Vtube
-    
-    lamda = wavelength * 1e-9
-
-    # calculate scatternig cross section
-    crossSec = (2 * np.pi**5)/3 * (d**6 / (lamda**4)) * ((n**2-1) / (n**2+2))**2 
-    # calculate scattering coefficient
-    coef = vNumSi * crossSec 
-    
-    return coef
-
+''' linear equation '''    
+def y(x,A,B):
+    return A*x + B
 
 '''
 calculate how noisy the data is based on the difference between the peak height 
 and data 100 spaces away
 '''
-def noiseCalculator(maxLoc, histogram):   
-    if histogram[maxLoc-100][0] > 0:
-        ratio = histogram[maxLoc][0]/histogram[maxLoc-100][0]
+def noiseCalculator(maxLoc, histogram): 
+    floor = np.mean(histogram[:maxLoc[0]])
+    if floor > 0:
+        ratio = histogram[maxLoc][0]/floor
     else:
         ratio = 1e9
+        print(floor, histogram[maxLoc][0])
     return 1/ratio
        
 
@@ -275,7 +220,7 @@ def readPHU(inputFileName, outputFileName):
 Convert .phu files to .txt files using readPHU, user defines inputPath to files
 """
 def PHUtoTXT(inputPath):
-    for folder in glob.glob(basePath):
+    for folder in glob.glob(inputPath):
         for file in glob.glob(folder + "*.phu"):
             # gather info recorded in filename - concentration, wavelength, and trial number
             trialInfo = file[-14:-4]
@@ -330,10 +275,6 @@ from here, data extracted from text file:
     relevant values stored into an array for each file
 '''
 def processData(file):
-    pSi = 2270 # density of silica, kg/m^3
-    pWa = 1000 # density of water, kg/m^3
-    pLu = 1290 # density of ludox, kg/m^3
-
     binSize = 0.0020              # bin size of hydraharp, in ns
     timeStep = binSize     # time step of count data, in s
     # create time array
@@ -406,147 +347,100 @@ def processData(file):
     return [concentration, wavelength, trial, inputCountRate, floor, FWHM, timeMax, binCenters, rawHistogram, PDF, noise, integrationTime, collectTime]
 
 
-'''
-fit histogram to optimized curve
-
-input: data array for a single histogram
-'''
-def optimizeFit(data):
-    for i in data.index:
-        floorvalue = data['floor'][i]
-        maxvalue = np.max(data['rawHistogram'][i])
-        xvalues = data['binCents'][i]
-        yvalues = data['rawHistogram'][i]
-        concVals = data['concentration'][i]
-        muVals = data['timeMax'][i]
-        betaVals = data['FWHM'][i]
-        wavelengths = data['wavelength'][i]
-        
-        
-        allFits = []
-        allWavelengths = []
-        allTimes = []
-        allParams = []
-        allConcs = []
-        allFWHMs = []
-        rsqmin = 1
-                
-        for i in range(len(muVals)):
-            m1 = float(muVals[i])
-            m2 = m1*1.3
-            beta1 = float(betaVals[i])/3.
-            beta2 = 10*float(betaVals[i])/3.
-            kval = floorvalue[i]
-            thresholds = np.linspace(0.05*maxvalue[i],0.95*maxvalue[i],5)
-            prefac1 = 5e5
-            prefac2 = np.linspace(1e4,1e6,20)
-            paramsFinal = np.zeros(7)
-            rsq = 100
-            
-            # initial fit
-            try:
-                fits, fitparams = gumbelSumFit(xvalues[i],yvalues[i],thresholds[0],prefac1,prefac2[0],m1,m2,beta1,beta2,kval) #calculating sum of squared residuals as parameter for fit quality
-                r = yvalues[i] - (fits[0] + fits[1])
-                rsq = np.sum(np.square(r))
-                paramsFinal = np.array(fitparams)
-            except:
-                fits = np.zeros(np.array(xvalues[i]).shape)
-                fitparams = np.zeros(paramsFinal.shape)
-                pass
-            
-            for prefac in prefac2:
-                for threshold in thresholds:
-                    try:
-                        fits, fitparams = gumbelSumFit(xvalues[i],yvalues[i],threshold,prefac1,prefac,m1,m2,beta1,beta2,kval)
-                        #calculating sum of squared residuals as parameter for fit quality
-                        r = yvalues[i] - fits
-                        rsq = np.sum(np.square(r))
-                    except:
-                        fits = np.zeros(np.array(xvalues[i]).shape)
-                        fitparams = np.zeros(paramsFinal.shape)
-                        pass
-                    
-                    if rsq < rsqmin and fitparams[1]>0 and fitparams[3]>0 and fitparams[5]>0 :
-                        paramsFinal = fitparams
-                        rsqFinal = rsq
-            
-        allFits.append(fits)
-        allParams.append(paramsFinal)
-        allWavelengths.append(wavelengths[i])
-        allTimes.append(muVals[i])
-        allFWHMs.append(betaVals[i])
-        allConcs.append(concVals[i])
-        
-    allValues = np.array([np.array(allConcs),np.array(allTimes),np.array(allFWHMs),np.array(allWavelengths)])
-    return allParams, allFits, allValues
-
-
-'''adjust peaks by wavelength to be relative to water values'''
-def adjustPeaksWavelength(data):
+''' linear function fitter '''    
+def linFit(data):
     lambdas = []
     allEFPTs = []
+    allnVals = []
     allSTDVs = []
-    allNVals = []
     allconcs = []
-    # pass through all available wavelength values
+    
+    # cycle through each wavelength
     for i in data.wavelength.drop_duplicates().to_numpy():
-        # truncate dataframe for relevant wavelength with relevant data
+        # separate out data taken at that wavelength
         dfLam = data[data['wavelength']==i]
         dfLam = dfLam.filter(['conc','timeMax','dateTime'])
-    
-        # create storage for values
-        meanEFPTs = []
-        stdevEFPTs = []
-        NVals = []
-        # create array of all available concentrations for this wavelength
-        concs = dfLam.conc.drop_duplicates().to_numpy()
-        # if there's a value for pure water
-        if concs[0]==0:
-            # add this wavelength to array
-            lambdas.append(i)
-            # find water entries for this wavelength
-            dfZero = dfLam[dfLam['conc']==0]
-            # find mean EFPT value through water at this wavelength, this will
-            # be the value to use for adjusting everything else
-            timeAdjust = dfZero.timeMax.mean()
-            
-            # pass through all availalbe concentrations for this wavelength
-            for j in concs:
-                # truncate dataframe to this concentration with relevant data
-                dfCon = dfLam[dfLam['conc']==j]
-                dfCon = dfCon.filter(['conc','timeMax','dateTime'])
-                # append values to storage arrays
-                NVals.append(len(dfCon.timeMax.to_numpy()))
-                meanEFPTs.append((dfCon.timeMax.mean()-timeAdjust))
-                stdevEFPTs.append((dfCon.timeMax.std()))
-            # append all values for this wavelength to storage arrays
-            allEFPTs.append(meanEFPTs)
-            allSTDVs.append(stdevEFPTs)
-            allNVals.append(NVals)
-            allconcs.append(concs)
-
-    # return array containing wavelengths, adjusted EFPTs, standard deviations, N values, and concentrations
-    return [lambdas, allconcs, allEFPTs, allSTDVs, allNVals]
-
-
-
-'''generate a line for the index of refraction passage time'''
-def generateIoRLine(concs, length):
-    # create array of indices of refraction for each concentration
-    IoRvals = (concs/100 * 1.47012) + (100-concs)/100 * 1.33
-    # calculate the speed of light in these media
-    speedLight = 2.9979e8 / IoRvals
-    
-    # create array of "baseline differences" i.e. projected difference in EFPT
-    # for the index-averaged media
-    baselineDif = []
-    for i in range(len(speedLight)):
-        baselineDif.append((length/speedLight[i] - length/speedLight[0])*1e9)
         
-    # return array of both the EFPTs and baseline differences
-    return np.array(length/speedLight, baselineDif)
-
+        # get array of available concentrations, dropping duplicates
+        concs = dfLam.conc.drop_duplicates().to_numpy()
+        # only use wavelengths for which there are multiple concentration datapoints:
+        if len(concs) > 1:
+            # only use wavelengths for which there's a water reference point
+            if concs[0]==0:
+                m, c = curve_fit(y, dfLam.conc.to_numpy(), dfLam.timeMax.to_numpy())
+                timeAdjust = m[0]*0 + m[1]
+        
+                meanEFPTs = []
+                conVals = []
+                errorEFPTs = []
+                nVals = []
     
+    
+                lambdas.append(i)
+    
+    
+                for j in concs:
+                    dfCon = dfLam[dfLam['conc']==j]
+                    dfCon = dfCon.filter(['conc','timeMax','dateTime'])
+                    nVals.append(len(dfCon.timeMax.to_numpy()))
+                    conVals.append(j)
+                    meanEFPTs.append(dfCon.timeMax.mean()-timeAdjust)
+                    
+                    times = dfCon.timeMax.to_numpy()
+                    # for t in times:
+                    #     conVals.append(j)
+                    #     meanEFPTs.append((t-timeAdjust))
+                    errorEFPTs.append(dfCon.timeMax.std()/len(times))
+                allEFPTs.append(meanEFPTs)
+                allnVals.append(nVals)
+                allconcs.append(conVals)
+                allSTDVs.append(errorEFPTs)
+    lambdas = np.array(lambdas)
+    
+    return [lambdas, allconcs, allEFPTs, allSTDVs, allnVals]
+
+''' 
+fit x,y data to gumbel distribution via scipy.optimize curve_fit function
+    
+prefactor A, peak location mu, scaling factor beta, noise k
+'''
+def gumbelFit(xpoints,ypoints,A,mu,beta,k):
+    # calculate best fits for data
+    try:
+        # be efficient the first time
+        parameters, covariance =  curve_fit(gumbel,xpoints,ypoints,[A,mu,beta,k],bounds=(0.,[np.inf,12.5,12.5,np.inf]), maxfev=5000)
+    except:
+        # we tried to be efficient but it didn't work. take longer now
+        parameters, covariance =  curve_fit(gumbel,xpoints,ypoints,[A,mu,beta,k],bounds=(0.,[np.inf,12.5,12.5,np.inf]), maxfev=20000)
+    
+    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+    stDevs = np.sqrt(np.diag(covariance))
+    # Calculate the residuals
+    residuals = ypoints - gumbel(xpoints, *parameters)
+    return parameters
+
+
+''' 
+fit x,y data to gumbel sum distribution via scipy.optimize curve_fit function
+    
+prefactor A1 A2, peak location mu1 mu2, scaling factor b1 b2, noise k
+'''
+def gumbelSumFit(xpoints,ypoints,A1,A2,mu1,mu2,b1,b2,k):
+    # calculate best fits for data
+    try:
+        # be efficient the first time
+        parameters, covariance =  curve_fit(gumbelSum,xpoints,ypoints,[A1,A2,mu1,mu2,b1,b2,k],bounds=(0.,[np.inf,np.inf,12.5,12.5,12.5,12.5,np.inf]),maxfev=5000)  
+    except:
+        # we tried to be efficient but it didn't work. take longer now
+        parameters, covariance =  curve_fit(gumbelSum,xpoints,ypoints,[A1,A2,mu1,mu2,b1,b2,k],bounds=(0.,[np.inf,np.inf,12.5,12.5,12.5,12.5,np.inf]),maxfev=20000)
+   
+    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+    stDevs = np.sqrt(np.diag(covariance))
+    # Calculate the residuals
+    residuals = ypoints - gumbelSum(xpoints, *parameters)
+    return gumbelSum(xpoints, *parameters), parameters
+
+
 
 ''' truncated colormap function I stole '''
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
@@ -562,29 +456,13 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
 
 
 
-''' plot histogram with fitted fit '''
-def plotFit(xdata,ydata,fitxdata,fitydata,xmin,xmax):
-    fig, ax = plt.subplots(figsize=(15,10))
-    colors = cm.rainbow(np.linspace(0, 1, len(xdata)))
-    ax.set_title("Extreme FPT histogram with gumbel sum fit")
-    for i in range(len(xdata)):
-        ax.semilogy(xdata[i], ydata[i], label='data', c=colors[i])
-        ax.semilogy(xdata[i], fitydata[i], '--', c=colors[i], label='fit')
-    ax.set_xlabel("Time (ns)",size=20)
-    ax.set_ylabel("Counts",size=20)
-    ax.set_xlim(xmin,xmax)
-    ax.tick_params(axis='both', which='both', labelsize=18)
-    plt.savefig('C:\\Users\\ancgo\\Documents\\python-figures\\gumbel-sum-fit-data.pdf')
-    
-
-
 ''' plot regular ol histogram '''
 def plotHistogram(data,xmin,xmax):
     fig, ax = plt.subplots()
     ax.set_xlabel("Time (ns)",size=16)
     ax.set_ylabel("Raw counts",size=16)
     for i in data.index:
-        ax.plot(data.binCents[i], data.rawHistogram[i])
+        ax.plot(data.binCents[i], data.rawHist[i])
     ax.tick_params(axis='both', labelsize=14)
     ax.tick_params(which='minor')
     ax.set_xlim(xmin,xmax)
@@ -608,93 +486,10 @@ def plotPDF(data,xmin,xmax):
     plt.savefig('C:\\Users\\ancgo\\Documents\\python-figures\\sample_PDFs.pdf', bbox_inches='tight')
 
 
-''' linear equation '''    
-def y(x,A,B):
-    return A*x + B
-
-
-
-''' linear function fitter '''    
-def linFit(data):
-    lambdas = []
-    allEFPTs = []
-    allnVals = []
-    allSTDVs = []
-    allconcs = []
-    for i in data.wavelength.drop_duplicates().to_numpy():
-        dfLam = data[data['wavelength']==i]
-        dfLam = dfLam.filter(['conc','timeMax','dateTime'])
-
-        concs = dfLam.conc.drop_duplicates().to_numpy()
-        if len(concs) > 1:
-            m, c = curve_fit(y, dfLam.conc.to_numpy(), dfLam.timeMax.to_numpy())
-            timeAdjust = m[0]*0 + m[1]
-    
-            meanEFPTs = []
-            errorEFPTs = []
-            nVals = []
-    
-            if concs[0]==0:
-    
-                lambdas.append(i)
-    
-    
-                for j in concs:
-                    dfCon = dfLam[dfLam['conc']==j]
-                    dfCon = dfCon.filter(['conc','timeMax','dateTime'])
-                    nVals.append(len(dfCon.timeMax.to_numpy()))
-        
-                    meanEFPTs.append((dfCon.timeMax.mean()-timeAdjust))
-                    errorEFPTs.append((dfCon.timeMax.std()))
-                allEFPTs.append(meanEFPTs)
-                allnVals.append(nVals)
-                allconcs.append(concs)
-                allSTDVs.append(0)
-    lambdas = np.array(lambdas)
-    
-    return [lambdas, allconcs, allEFPTs, allSTDVs, allnVals]
-
-
-
-''' 
-Take in array of [wavelengths, concs for each wavelength, efpts for each wavelength, 
-                  standard devs for all wavelengths, and N vals for all wavelengths]
-
-Plot that shit, concentration on the x and adjusted EFPT on the y, color = wavelength
-'''
-def plotPeaksWavelengthScaled(adjustedData):
-    # generate colormap, truncated for visual helpfulness
-    cmap_base = 'plasma_r'
-    vmin, vmax = 0.3, 1
-    cmap = truncate_colormap(cmap_base, vmin, vmax)
-    colors = cm.plasma_r(np.linspace(0.3, 1, len(adjustedData[0])))
-
-    # generate figure and axes
-    fig, ax = plt.subplots(figsize=(6,4.5))
-    ax.set_xlabel('C',size=16)
-    ax.set_ylabel(r'$t(C) - t(0)$ (ps)',size=16)
-
-    # pass through each wavelength available
-    for i in range(len(adjustedData[0])):
-        # scatter plot each array of concentrations and adjusted EFPTs
-        ax.scatter(adjustedData[1][i], adjustedData[2][i], color=colors[i])
-
-    # create colorbar for wavelength color
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(680, 830), cmap=cmap), ax=ax, location='top', orientation='horizontal', label='Wavelength (nm)')
-    cbar.ax.set_xlabel('Wavelength (nm)',size=14)
-    cbar.ax.tick_params(labelsize=12)
-    
-    # other settings
-    ax.tick_params(axis='both', labelsize=14)
-
-    # save figure
-    plt.savefig('C:\\Users\\ancgo\\Documents\\python-figures\\alldata.pdf', bbox_inches='tight')
-    
-
 ''' 
 Take in non-adjusted array of data
 
-Plot that shit, concentration on the x and adjusted EFPT on the y, color = wavelength
+Plot, concentration on the x and adjusted EFPT on the y, color = wavelength
 '''
 def plotPeaksWavelength(data):
     cmap_base = 'autumn_r'
@@ -716,88 +511,111 @@ def plotPeaksWavelength(data):
     
 
 ''' 
-Take in non-adjusted array of data
+Plot one set of predictions
 
-Plot that shit, concentration on the x and EFPT width on the y, color = wavelength
+Plot, concentration on the x and EFPT delay on the y, color = wavelength
 '''
-def plotWidths(data):
-    cmap_base = 'autumn_r'
-    vmin, vmax = 0.2, 1
-    cmap = truncate_colormap(cmap_base, vmin, vmax)
+def plotPredictions(predicts,ymin,ymax):
+    # generate figure
+    fig,ax = plt.subplots(1, figsize=(5,5))
     
+    # make a colormap for the colorbar
+    cmap_base = 'plasma'
+    vmin, vmax = 0.2, 0.75
+    # make colors for the predictions
+    cmap = truncate_colormap(cmap_base, vmin, vmax)        
+    colors = cm.plasma(np.linspace(0.2,0.75, 2))
     
-    fig, ax = plt.subplots(figsize=(15,10))
-    ax.set_title("FPT peak width vs concentration by wavelength",size=20)
-    ax.set_xlabel("Volume concentration of silica nanospheres",size=30)
-    ax.set_ylabel("Width (ns)",size=30)
-    plot = ax.scatter(data.concentration, data.FWHM, c = data.wavelength.to_numpy(), cmap=cmap)
-    cbar = fig.colorbar(plot)
-    cbar.ax.tick_params(labelsize=25)
-    ax.tick_params(axis='both', length=12, labelsize=25)
-    ax.tick_params(which='minor', length=6)
-    
-   
-   
-''' 
-Now things get ugly
-'''
-def plotPredictionsWithData(predictionsTel1,predictionsTel2, adjustedData):
+    # make plot pretty
+    plt.tick_params(axis='both', labelsize=14)
+    plt.xlabel('$C$',size=16)
+    plt.ylabel(r'$t(C) - t(0)$ (ps)',size=16)
+    plt.xlim(-0.015,0.28)
+    plt.ylim(ymin,ymax)
 
-    fig, ax = plt.subplots(2, figsize=(5,3))
-    plt.subplots_adjust(bottom = -1.75, hspace=0.25)
-    a = 0.62
-    ax[0].set_xlabel('$C$',size=16)
-    ax[1].set_xlabel('$C$',size=16,labelpad=-0.1)
-    ax[0].set_ylabel(r'$t(C) - t(0)$ (ps)',size=16)
-    ax[1].set_ylabel(r'$t(C) - t(0)$ (ps)',size=16)
+    # plot predictions
+    plt.plot(predicts.conc,1000*predicts.diff_680_dif, ":", c =  colors[0], alpha=1.5*0.62)
+    plt.plot(predicts.conc,1000*predicts.diff_830_dif,":", c =  colors[-1], alpha=1.5*0.62)
 
-    ax[0].plot(predictionsTel1.conc_680, predictionsTel1.IOR_680_dif, c = 'rebeccapurple')
-    ax[0].plot(predictionsTel1.conc_830, predictionsTel1.IOR_830_dif, c = 'darkorange')
-    for j in range(len(adjustedData)):
-        cmap_base = 'plasma'
-        vmin, vmax = 0.2, 0.75
-        cmap = truncate_colormap(cmap_base, vmin, vmax)
-        colors = cm.plasma(np.linspace(0.2,0.75, len(adjustedData[j][0])))
-        for i in range(len(adjustedData[j][0])):
-            # scatter plot each array of concentrations and adjusted EFPTs
-            ax[0].scatter(adjustedData[j][1][i], adjustedData[j][2][i], color=colors[i])
-
-    ax[0].plot(predictionsTel2.conc_680, predictionsTel2.tel_680_dif,'--', c =  colors[0], alpha=1.5*a)
-    ax[0].plot(predictionsTel2.conc_830, predictionsTel2.tel_830_dif, '--', c =  colors[-1], alpha=1.5*a)
-
-
-
-    ax[1].plot(predictionsTel1.conc_680, predictionsTel1.IOR_680_dif, c = 'rebeccapurple')
-    ax[1].plot(predictionsTel1.conc_830, predictionsTel1.IOR_830_dif, c = 'darkorange')
-
-    for j in range(len(adjustedData)):
-        cmap_base = 'plasma'
-        vmin, vmax = 0.2, 0.75
-        cmap = truncate_colormap(cmap_base, vmin, vmax)
-        colors = cm.plasma(np.linspace(0.2,0.75, len(adjustedData[j][0])))
-        for i in range(len(adjustedData[j][0])):
-            # scatter plot each array of concentrations and adjusted EFPTs
-            ax[1].scatter(adjustedData[j][1][i], adjustedData[j][2][i], color=colors[i])
-
-    ax[1].plot(predictionsTel2.conc_680, predictionsTel2.tel_680_dif,'--', c =  colors[0], alpha=1.5*a)
-    ax[1].plot(predictionsTel2.conc_830, predictionsTel2.tel_830_dif, '--', c =  colors[-1], alpha=1.5*a)
-
-    ax[0].tick_params(axis='both', labelsize=14)
-    ax[1].tick_params(axis='both', labelsize=14)
-    ax[0].set_xlim(-1e-2,0.25)
-    ax[0].set_ylim(-0.015,0.130)
-    ax[1].set_xlim(1.5e-2,0.27)
-    ax[1].set_ylim(1e-3,2.5e1)
-    ax[1].set_xscale('log')
-    ax[1].set_yscale('log')
-
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(680, 830), cmap=cmap), ax=ax, location='bottom',ticks=[680, 830], orientation='horizontal', label='Wavelength (nm)', aspect=30, pad=0.07)
-
-    #cbar.ax.set_xticklabels(['Low', 'Medium', 'High'])
+    # make colorbar
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(680, 830), cmap=cmap), ax=ax, location='bottom',ticks=[680, 830], orientation='horizontal', label='Wavelength (nm)', aspect=30, pad=0.15)
     cbar.ax.set_xlabel('Wavelength (nm)',size=16,labelpad=-10)
     cbar.ax.tick_params(labelsize=14)
-    plt.savefig('C:\\Users\\ancgo\\Documents\\python-figures\\temp_predictions_with_data.pdf', bbox_inches='tight')
+    
+    # save to file
+    plt.savefig('C:\\Users\\ancgo\\Documents\\python-figures\\temp_predicts.pdf', bbox_inches='tight')
+   
+    
+''' 
+Plot all the predictions with the data
 
+Plot, concentration on the x and EFPT delay on the y, color = wavelength
+
+IoR predictions solid line
+Diffusion predictions dotted
+Telegraph predictions dashed
+'''
+def plotPredictionsWithData(predictionsTel, predictionsDiff, adjustedData):
+    # generate figure subplots
+    fig, ax = plt.subplots(2, figsize=(5,3))
+    plt.subplots_adjust(bottom = -1.75, hspace=0.25)
+    
+    # make the labels pretty - top plot 
+    ax[0].set_xlabel('$C$',size=16)
+    ax[0].set_ylabel(r'$t(C) - t(0)$ (ps)',size=16)
+    ax[0].tick_params(axis='both', labelsize=14)
+    ax[0].set_xlim(-0.015,0.25)
+    ax[0].set_ylim(-50,200)
+    
+    # make the labels pretty - bottom plot
+    ax[1].tick_params(axis='both', labelsize=14)
+    ax[1].set_xlim(1e-2,0.28)
+    ax[1].set_ylim(0.5,1000)
+    ax[1].set_xscale('log')
+    ax[1].set_yscale('log')
+    ax[1].set_ylabel(r'$t(C) - t(0)$ (ps)',size=16)
+    ax[1].set_xlabel('$C$',size=16,labelpad=-0.1)
+    
+    # generate color scheme for predictions and colorbar
+    predictColors = cm.plasma(np.linspace(0.2,0.75, 2))
+    cmap_base = 'plasma'
+    vmin, vmax = 0.2, 0.75
+    cmap = truncate_colormap(cmap_base, vmin, vmax)
+    
+    # plot index of refraction predictions
+    ax[0].plot(predictionsDiff.conc, 1000*predictionsDiff.IoR_680_dif, c = predictColors[0])
+    ax[0].plot(predictionsDiff.conc, 1000*predictionsDiff.IoR_830_dif, c = predictColors[-1])
+    ax[1].plot(predictionsDiff.conc, 1000*predictionsDiff.IoR_680_dif, c = predictColors[0])
+    ax[1].plot(predictionsDiff.conc, 1000*predictionsDiff.IoR_830_dif, c = predictColors[-1])
+
+    # plot diffusion predictions
+    ax[0].plot(predictionsDiff.conc, 1000*predictionsDiff.diff_680_dif,':', c =  predictColors[0])
+    ax[0].plot(predictionsDiff.conc, 1000*predictionsDiff.diff_830_dif, ':', c =  predictColors[-1])
+    ax[1].plot(predictionsDiff.conc, 1000*predictionsDiff.diff_680_dif,':', c =  predictColors[0])
+    ax[1].plot(predictionsDiff.conc, 1000*predictionsDiff.diff_830_dif, ':', c =  predictColors[-1])
+
+    # plot telegraph predictions
+    ax[0].plot(predictionsTel.conc_680, 1000*predictionsTel.tel_680_dif,'--', c =  predictColors[0])
+    ax[0].plot(predictionsTel.conc_830, 1000*predictionsTel.tel_830_dif, '--', c =  predictColors[-1])
+    ax[1].plot(predictionsTel.conc_680, 1000*predictionsTel.tel_680_dif,'--', c =  predictColors[0])
+    ax[1].plot(predictionsTel.conc_830, 1000*predictionsTel.tel_830_dif, '--', c =  predictColors[-1])
+
+    # plot actual data
+    for j in range(len(adjustedData)):
+        colors = cm.plasma(np.linspace(0.2,0.75, len(adjustedData[j][0])))
+        for i in range(len(adjustedData[j][0])):
+            # scatter plot each array of concentrations and adjusted EFPTs
+            ax[0].scatter(adjustedData[j][1][i], 1000*np.array(adjustedData[j][2][i]), color=colors[i])
+            ax[1].scatter(adjustedData[j][1][i], 1000*np.array(adjustedData[j][2][i]), color=colors[i])
+
+    # generate colorbar
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(680, 830), cmap=cmap), ax=ax, location='bottom',ticks=[680, 830], orientation='horizontal', label='Wavelength (nm)', aspect=30, pad=0.07)
+    cbar.ax.set_xlabel('Wavelength (nm)',size=16,labelpad=-10)
+    cbar.ax.tick_params(labelsize=14)
+    
+    # save plot to file
+    plt.savefig('C:\\Users\\ancgo\\Documents\\python-figures\\temp_predictions_with_data.pdf', bbox_inches='tight')
+    
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -810,39 +628,29 @@ if __name__ == "__main__":
     # PHUtoTXT(basePath)
     dfs = loadDataFiles(basePath)
     
+    # create empty arrays for data storage
     dfsNoAir = []
+    dfsBad = []
     dfsAdjusted = []
+    dfsGoodAdjusted = []
     for df in dfs:
         # make dataframes for water, air, and ludox data
         df_noAir = df[df["conc"]>-0.1]
-        # preset intervals for where the max is (reasonably) in datafiles - change as needed
-        # df_noAir = df_noAir[df_noAir['timeMax']>5]
-        # df_noAir = df_noAir[df_noAir['timeMax']<5.8]
         # remove anything that is particularly noisy
-        df_noAir = df_noAir[(df_noAir['inputRate'] > 1e4) & (df_noAir['noiseFactor'] < 1e-3)]
-        
-        dfsNoAir.append(df_noAir)
-        dfsAdjusted.append(linFit(df_noAir))
-    
-    # write new data to pickle file
-    # get current date and time
-    now = datetime.now()    
-    # generate filename
-    # dataPickleName = os.path.join(basePath, now.strftime("%Y-%m-%d-%H-%M")+".pkl")
-    # df_noAir.to_pickle(dataPickleName)
-    
-    # adjust peaks to be relative to peaks through water, by wavelength
-    adjust = linFit(df_noAir)
-    # plot adjusted data
-    plotPeaksWavelengthScaled(adjust)
-    
-    
-    # # load in predictions, add column I should have put into csv file to begin with
-    # dfPredictions = pd.read_csv("C:/Users/ancgo/Documents/prediction_values_scaled.csv")
-    # dfPredictions_diff = pd.read_csv("C:/Users/ancgo/Documents/diffPredicts.csv")
-    dfPredictions_tel_5e6 = pd.read_csv("C:/Users/ancgo/Documents/tel_predicts_N5e6.csv")
-    dfPredictions_tel_5e7 = pd.read_csv("C:/Users/ancgo/Documents/tel_predicts_N5e7.csv")
-    plotPredictionsWithData(dfPredictions_tel_5e6,dfPredictions_tel_5e7,dfsAdjusted)
+        thresh = 0.02
+        df_good = df_noAir[(df_noAir['noiseFactor'] < thresh)]
+        df_bad = df_noAir[(df_noAir['noiseFactor'] >= thresh)]
 
-    # dfPredictions_tel_new = pd.read_csv("C:/Users/ancgo/Documents/telPredicts_extranew.csv")
-    # dfPredictions_diff_new = pd.read_csv("C:/Users/ancgo/Documents/diffPredicts_Lossless.csv")
+        dfsNoAir.append(df_noAir)
+        dfsBad.append(df_bad)
+        dfsAdjusted.append(linFit(df_noAir))
+        dfsGoodAdjusted.append(linFit(df_good))
+    
+    
+    # load in predictions
+    dfPredictions_tel_5e7 = pd.read_csv("C:/Users/ancgo/Documents/tel_predicts_N5e7.csv")
+    dfPredictions_diff_5e7 = pd.read_csv("C:/Users/ancgo/Documents/diff_predicts_N5e7.csv")
+    
+    # plot it all
+    plotPredictionsWithData(dfPredictions_tel_5e7,dfPredictions_diff_5e7,dfsAdjusted)
+    plotPredictionsWithData(dfPredictions_tel_5e7,dfPredictions_diff_5e7,dfsGoodAdjusted)
